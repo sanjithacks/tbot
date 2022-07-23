@@ -1,7 +1,3 @@
-from argparse import Action
-from email.message import Message
-import logging
-from subprocess import call
 from telegram.ext.updater import Updater
 from telegram.update import Update
 from telegram import ParseMode, Update
@@ -22,7 +18,6 @@ from datetime import datetime as dt
 import re
 from datetime import timedelta
 import calendar
-import requests
 import json
 import os
 
