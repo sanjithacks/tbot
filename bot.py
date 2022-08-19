@@ -32,24 +32,7 @@ utc_dt = utc.localize(datetime.utcfromtimestamp(tx))
 kol_tz = timezone('Asia/Kolkata')
 kol_dt = utc_dt.astimezone(kol_tz)
 
-#print("Time in india: {}".format(kol_dt.strftime(fmt)))
-
 kolT = math.floor(kol_dt.timestamp())
-print(kolT)
-#result = hashlib.md5(uid.encode())
-
-#dt = {"uid": 78111787, "fname": "uss", "hash": result.hexdigest()}
-#resp = requests.post(LINK, data=dt)
-
-
-def fetchAPI(linkO):
-    resp = requests.post(linkO)
-    if resp.status_code == 200:
-        data = resp.text
-        dataJ = json.loads(data)
-        return [True, dataJ["startTime"]]
-    else:
-        return[False]
 
 
 def start(update: Update, context: CallbackContext):
