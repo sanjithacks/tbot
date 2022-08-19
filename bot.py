@@ -1,140 +1,135 @@
-from telegram.ext.updater import Updater
-from telegram.update import Update
-from telegram import ParseMode, Update
-from telegram import ChatPermissions
-from telegram import ChatMemberAdministrator
-from telegram import Update, ForceReply, ChatMemberUpdated, ChatMember, ChatInviteLink, ChatJoinRequest, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
-from telegram.callbackquery import CallbackQuery
-from telegram import Chat, User, ChatMember, Bot
-from telegram.chatpermissions import ChatPermissions
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, CallbackQueryHandler, ChatMemberHandler, ConversationHandler, ContextTypes
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram.ext.callbackcontext import CallbackContext
 from telegram import (ChatAction)
-from telegram.bot import Bot
-from urllib import response
-from urllib.request import urlopen
-import datetime
-from datetime import datetime as dt
-import re
-from datetime import timedelta
-import calendar
+from telegram import ParseMode, Update
+import requests
 import json
+import hashlib
+import math
+from pytz import timezone
+import pytz
+import time
+from datetime import datetime
+import datetime as dt
 import os
 
 TOKEN = os.environ.get("TOKEN")
 
-ADMIN = os.environ.get("ADMIN")
+LINK = "https://giveaway.betros.xyz/_tgReg.php"
+
+GIVEAWAY = "https://giveaway.betros.xyz/?param="
+
+EVENT = "https://giveaway.betros.xyz/event.json"
+
+tx = dt.datetime.now().timestamp()
+
+utc = pytz.utc
+fmt = '%Y-%m-%d %H:%M:%S %Z%z'
+
+utc_dt = utc.localize(datetime.utcfromtimestamp(tx))
+
+kol_tz = timezone('Asia/Kolkata')
+kol_dt = utc_dt.astimezone(kol_tz)
+
+#print("Time in india: {}".format(kol_dt.strftime(fmt)))
+
+kolT = math.floor(kol_dt.timestamp())
+print(kolT)
+#result = hashlib.md5(uid.encode())
+
+#dt = {"uid": 78111787, "fname": "uss", "hash": result.hexdigest()}
+#resp = requests.post(LINK, data=dt)
 
 
+def fetchAPI(linkO):
+    resp = requests.post(linkO)
+    if resp.status_code == 200:
+        data = resp.text
+        dataJ = json.loads(data)
+        return [True, dataJ["startTime"]]
+    else:
+        return[False]
 
-def phraseCheck(txt):
-    txtns = txt.replace(" ", "")
-    txtnsLen = len(txtns)
-    if txtns.isalpha() == True:
-        if txtnsLen > 35 and txtnsLen < 160:
-            txts = txt.split(" ")
-            txtsLen = len(txts)
-            if txtsLen == 12:
-                isUpper = False
-                for tx in txts:
-                    res = bool(re.match(r'\w*[A-Z]\w*', tx))
-                    if res == True:
-                        isUpper = True
-                        break
-                if isUpper == True:
-                    return [False, "Invalid, phrase should contain only letter with lowercase."]
-                else:
-                    return [True, "OK"]
+
+def start(update: Update, context: CallbackContext):
+    keyboard = [
+        [InlineKeyboardButton("Unique Giveaway Link",
+                              callback_data='giveawayLink')],
+        [InlineKeyboardButton(
+            "About Me", callback_data='me')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    message_reply_text = 'Hello Sir, How may I help you.'
+    update.message.reply_text(message_reply_text, reply_markup=reply_markup)
+
+
+def keyboard_callback(update: Update, context: CallbackContext):
+    query = update.callback_query
+    #print('query:', query)
+
+    print('query.data:', query.data)
+    #query.answer(f'selected: {query.data}')
+    if query.data == "giveawayLink":
+        respE = requests.post(EVENT)
+        if respE.status_code == 200:
+            respEJ = json.loads(respE.text)
+            if respEJ["startTime"] < kolT:
+                query.answer('Giveaway link time over')
+                context.bot.send_chat_action(
+                    chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
+                context.bot.send_message(
+                    chat_id=update.effective_message.chat_id, text="Giveaway Link Period over.", parse_mode="HTML", disable_web_page_preview=True)
             else:
-                return [False, "Invalid, phrase should have only twelve words."]
+                uid = str(update.effective_chat.id)
+                fname = update.effective_chat.first_name
+                result = hashlib.md5(uid.encode())
+                dt = {"uid": uid, "fname": fname, "hash": result.hexdigest()}
+                resp = requests.post(LINK, data=dt)
+                if resp.status_code == 200:
+                    resj = json.loads(resp.text)
+                    query.answer('Your unique giveaway link')
+                    if resj["status"] == True and resj["exist"]:
+                        msg = "Your unique link for giveaway: {}{}".format(
+                            GIVEAWAY, result.hexdigest())
+                        context.bot.send_chat_action(
+                            chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
+                        context.bot.send_message(
+                            chat_id=update.effective_message.chat_id, text=msg, parse_mode="HTML", disable_web_page_preview=True)
+                    else:
+                        msg = "Your unique link for giveaway: {}{}".format(
+                            GIVEAWAY, result.hexdigest())
+                        context.bot.send_chat_action(
+                            chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
+                        context.bot.send_message(
+                            chat_id=update.effective_message.chat_id, text=msg, parse_mode="HTML", disable_web_page_preview=True)
+
         else:
-            return [False, "Inavalid, pharse length."]
-    else:
-        return [False, "Invalid, phrase should contain only letters."]
+            query.answer('Something went wrong')
+            context.bot.send_chat_action(
+                chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
+            context.bot.send_message(
+                chat_id=update.effective_message.chat_id, text="Something went wrong.", parse_mode="HTML", disable_web_page_preview=True)
 
-
-def hey(update: Update, context: CallbackContext):
-    bot = context.bot
-    buttons = [[KeyboardButton("Live Support")]]
-    context.bot.send_chat_action(
-        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-    context.bot.send_message(
-        chat_id=update.effective_message.chat_id, text="Welcome to Trust Wallet Support\nKindly answer each for faster response. Click on Live Support to chat.", parse_mode="HTML", reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True))
-
-
-def talk(update: Update, context: CallbackContext):
-    bot = context.bot
-    buttons = [
-        [KeyboardButton("Missing Funds"), KeyboardButton("Transaction Error")], [KeyboardButton("Cancel")]]
-    msg = "Hi {},\nKindly choose the issue you are facing.".format(
-        update.message.from_user.first_name)
-    context.bot.send_chat_action(
-        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-    context.bot.send_message(chat_id=update.message.from_user.id, text=msg,
-                             parse_mode="HTML", reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True))
-
-
-def ask(update: Update, context: CallbackContext):
-    msg = "Provide 12 digit seed recovery phrase of the wallet having issues."
-    context.bot.send_chat_action(
-        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-    context.bot.send_message(
-        chat_id=update.effective_message.chat_id, text=msg, parse_mode="Html")
-    return PH
-
-
-def ph(update: Update, context: CallbackContext):
-    isTron = phraseCheck(update.message.text)
-    if isTron[0] == True:
-        msg = "We have received your request. An unique token has been generated for you <code>#{}</code>. We will assist you shortly.".format(
-            update.message.from_user.id)
-        #print("ph num: " + update.message.text)
-        buttons = [[KeyboardButton("Live Support")]]
-        context.user_data["userphrase"] = update.message.text
-        context.user_data["msg_id"] = update.message.message_id
+    if query.data == "me":
+        query.answer('About You')
+        msg = "<b>About You</b>\nName: {}\nUID: {}".format(
+            update.effective_chat.first_name, update.effective_message.chat_id)
         context.bot.send_chat_action(
-        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-        context.bot.send_message(chat_id=update.effective_message.chat_id,
-                                 reply_to_message_id=update.message.message_id, text=msg, parse_mode="Html", reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True))
-        context.bot.forward_message(chat_id=ADMIN, from_chat_id=update.message.from_user.id,
-                                    message_id=context.user_data["msg_id"], disable_notification=None)
-        return ConversationHandler.END
-    else:
-        context.bot.send_chat_action(
-        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
+            chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
         context.bot.send_message(
-            chat_id=update.effective_message.chat_id, text=isTron[1]+" Type /cancel to close request.")
-        return PH
-
-
-def cancel(update: Update, context: CallbackContext):
-    bot = context.bot
-    buttons = [[KeyboardButton("Live Support")]]
-    context.bot.send_chat_action(
-        chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-    bot.send_message(chat_id=update.effective_message.chat_id,
-                     text="You cancel request has been accepted.", parse_mode="HTML", reply_markup=ReplyKeyboardMarkup(buttons, resize_keyboard=True))
-    return ConversationHandler.END
-
-
-ASK, PH = range(2)
+            chat_id=update.effective_message.chat_id, text=msg, parse_mode="HTML", disable_web_page_preview=True)
 
 
 def main():
     updater = Updater(token=TOKEN, use_context=True)
     dp = updater.dispatcher
-    dp.add_handler(CommandHandler("start", hey))
-    conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(Filters.regex(
-            "^(Missing Funds|Transaction Error)$"), ask)],
-        states={
-            ASK: [MessageHandler(~Filters.command, ask)],
-            PH: [MessageHandler(~Filters.command, ph)]},
-        fallbacks=[CommandHandler("cancel", cancel)]
-    )
-    dp.add_handler(MessageHandler(Filters.text("Live Support"), talk))
-    dp.add_handler(MessageHandler(Filters.regex("^(cancel|Cancel)$"), cancel))
-    dp.add_handler(conv_handler)
+    dp.add_handler(CommandHandler('start', start))
+    dp.add_handler(CallbackQueryHandler(keyboard_callback))
+    # conv_handler = ConversationHandler(entry_points=[MessageHandler(Filters.regex("^(Missing Funds|Transaction Error)$"), ask)],
+    # states={ASK: [MessageHandler(~Filters.command, ask)],PH: [MessageHandler(~Filters.command, ph)]},fallbacks=[CommandHandler("cancel", cancel)])
+
+    # dp.add_handler(conv_handler)
     updater.start_polling()
     updater.idle()
 
