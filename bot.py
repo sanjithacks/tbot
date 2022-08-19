@@ -34,7 +34,6 @@ kol_dt = utc_dt.astimezone(kol_tz)
 
 kolT = math.floor(kol_dt.timestamp())
 
-
 def start(update: Update, context: CallbackContext):
     keyboard = [
         [InlineKeyboardButton("Unique Giveaway Link",
@@ -43,16 +42,14 @@ def start(update: Update, context: CallbackContext):
             "About Me", callback_data='me')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    message_reply_text = 'Hello Sir, How may I help you.'
-    update.message.reply_text(message_reply_text, reply_markup=reply_markup)
+    context.bot.send_chat_action(
+                    chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
+    context.bot.send_message(
+                    chat_id=update.effective_message.chat_id, text="Hello Sir, How may I help you.", parse_mode="HTML",reply_markup=reply_markup)
 
 
 def keyboard_callback(update: Update, context: CallbackContext):
     query = update.callback_query
-    #print('query:', query)
-
-    print('query.data:', query.data)
-    #query.answer(f'selected: {query.data}')
     if query.data == "giveawayLink":
         respE = requests.post(EVENT)
         if respE.status_code == 200:
@@ -109,10 +106,6 @@ def main():
     dp = updater.dispatcher
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(CallbackQueryHandler(keyboard_callback))
-    # conv_handler = ConversationHandler(entry_points=[MessageHandler(Filters.regex("^(Missing Funds|Transaction Error)$"), ask)],
-    # states={ASK: [MessageHandler(~Filters.command, ask)],PH: [MessageHandler(~Filters.command, ph)]},fallbacks=[CommandHandler("cancel", cancel)])
-
-    # dp.add_handler(conv_handler)
     updater.start_polling()
     updater.idle()
 
