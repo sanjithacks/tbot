@@ -54,7 +54,7 @@ def keyboard_callback(update: Update, context: CallbackContext):
         respE = requests.post(EVENT)
         if respE.status_code == 200:
             respEJ = json.loads(respE.text)
-            if respEJ["startTime"] < kolT:
+            if kolT > respEJ["startTime"]:
                 query.answer('Giveaway link time over')
                 context.bot.send_chat_action(
                     chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
