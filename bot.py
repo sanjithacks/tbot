@@ -63,7 +63,6 @@ def keyboard_callback(update: Update, context: CallbackContext):
             else:
                 uid = str(update.effective_chat.id)
                 fname = update.effective_chat.first_name
-                #result = hashlib.md5(uid.encode())
                 result = hashlib.sha1(uid.encode())
                 dt = {"uid": uid, "fname": fname, "hash": result.hexdigest()}
                 resp = requests.post(LINK, data=dt)
