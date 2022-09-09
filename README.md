@@ -11,7 +11,7 @@ tags:
 
 This example starts a Telegram bot using [python-telegram-bot](https://www.python-telegram-bot.org/) library.
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Frailwayapp%2Fexamples%2Ftree%2Fmaster%2Fexamples%2Fpython-telegram-bot&envs=TOKEN&TOKENDesc=The+Telegram+Bot%27s+Token+%28Generate+a+token+from+%40BotFather+if+you+don%27t+have+one%21%29)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fsanjithacks%2Ftbot%26envs%3DTOKEN%26TOKENDesc%3DThe%20Telegram%20Bot%27s%20Token%20(Generate%20a%20token%20from%20%40BotFather%20if%20you%20don%27t%20have%20one!))
 
 ## ✨ Features
 
